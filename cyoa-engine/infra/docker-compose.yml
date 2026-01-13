@@ -1,0 +1,155 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cyoa-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cyoa
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cyoa_secret}
+      POSTGRES_DB: cyoa
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cyoa -d cyoa"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cyoa-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: cyoa-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cyoa-net
+
+  api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.api
+    container_name: cyoa-api
+    restart: unless-stopped
+    environment:
+      PORT: "3000"
+      DATABASE_URL: postgresql://cyoa:${POSTGRES_PASSWORD:-cyoa_secret}@postgres:5432/cyoa
+      REDIS_URL: redis://redis:6379
+      CYOA_API_KEY: ${CYOA_API_KEY}
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - cyoa-net
+
+  worker:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.worker
+    container_name: cyoa-worker
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://cyoa:${POSTGRES_PASSWORD:-cyoa_secret}@postgres:5432/cyoa
+      REDIS_URL: redis://redis:6379
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-4-20250514}
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - cyoa-net
+
+  api-staging:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.api
+    container_name: cyoa-api-staging
+    restart: unless-stopped
+    environment:
+      PORT: "3000"
+      DATABASE_URL: postgresql://cyoa:${POSTGRES_PASSWORD:-cyoa_secret}@postgres:5432/cyoa_staging
+      REDIS_URL: redis://redis:6379
+      CYOA_API_KEY: ${CYOA_API_KEY}
+      NODE_ENV: staging
+      QUEUE_PREFIX: "staging:"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - cyoa-net
+
+  worker-staging:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.worker
+    container_name: cyoa-worker-staging
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://cyoa:${POSTGRES_PASSWORD:-cyoa_secret}@postgres:5432/cyoa_staging
+      REDIS_URL: redis://redis:6379
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-4-20250514}
+      NODE_ENV: staging
+      QUEUE_PREFIX: "staging:"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - cyoa-net
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: cyoa-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "3001:3001"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+      - api-staging
+    networks:
+      - cyoa-net
+
+volumes:
+  postgres_data:
+  redis_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  cyoa-net:
+    driver: bridge

@@ -1,0 +1,243 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Job status enumeration
+enum JobStatus {
+  queued
+  running
+  succeeded
+  failed
+}
+
+/// Scene type enumeration
+enum SceneType {
+  intro        // Opening scene
+  branch       // Decision point with multiple paths
+  consequence  // Result of a previous decision
+  ending       // Terminal scene
+}
+
+/// Ending quality tier
+enum EndingQuality {
+  bad
+  neutral
+  good
+  best
+  secret
+}
+
+/// Story generation job - tracks the overall generation process
+model StoryJob {
+  id          String    @id @default(uuid())
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  /// Current job status
+  status      JobStatus @default(queued)
+
+  /// Progress (0-100)
+  progress    Int       @default(0)
+
+  /// Human-readable progress message
+  message     String    @default("Queued")
+
+  /// Input parameters as JSON
+  /// { genre: string, tone: string, difficulty: string, player_name: string, player_gender: string }
+  input       Json
+
+  /// Reference to completed story (null until succeeded)
+  storyId     String?   @unique @map("story_id")
+  story       Story?    @relation(fields: [storyId], references: [id])
+
+  /// Error message if failed
+  error       String?
+
+  /// Generation checkpoints for recovery
+  checkpoints GenerationCheckpoint[]
+
+  @@map("story_jobs")
+}
+
+/// Generation checkpoint for resumable story creation
+model GenerationCheckpoint {
+  id          String    @id @default(uuid())
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  /// Parent job
+  jobId       String    @map("job_id")
+  job         StoryJob  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  /// Phase identifier (e.g., "world_building", "scene_3_generation")
+  phase       String
+
+  /// Full generation state as JSON
+  state       Json
+
+  /// Debug notes
+  notes       Json      @default("{}")
+
+  @@index([jobId])
+  @@map("generation_checkpoints")
+}
+
+/// A complete interactive story with branching paths
+model Story {
+  id          String    @id @default(uuid())
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  /// Story title
+  title       String
+
+  /// Genre (fantasy, mystery, scifi, romance, horror)
+  genre       String
+
+  /// Story premise/hook
+  premise     String
+
+  /// World rules and setting as JSON
+  /// { setting: string, key_characters: [...], rules: [...] }
+  worldRules  Json      @map("world_rules")
+
+  /// Tone (light, balanced, dark)
+  tone        String    @default("balanced")
+
+  /// Difficulty (forgiving, normal, punishing)
+  difficulty  String    @default("normal")
+
+  /// Statistics
+  totalScenes   Int     @default(0) @map("total_scenes")
+  totalEndings  Int     @default(0) @map("total_endings")
+
+  /// Cover image URL
+  coverUrl    String?   @map("cover_url")
+
+  /// Whether story is public
+  isPublic    Boolean   @default(false) @map("is_public")
+
+  /// All scenes in this story
+  scenes      Scene[]
+
+  /// All playthroughs of this story
+  playthroughs Playthrough[]
+
+  /// The job that created this story (if any)
+  job         StoryJob?
+
+  @@map("stories")
+}
+
+/// A scene in the story (node in the DAG)
+model Scene {
+  id          String    @id @default(uuid())
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  /// Parent story
+  storyId     String    @map("story_id")
+  story       Story     @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  /// Scene type
+  sceneType   SceneType @map("scene_type")
+
+  /// Narrative content
+  content     String
+
+  /// Character state changes as JSON (health, items, relationships)
+  characterState Json?  @map("character_state")
+
+  /// Order in generation (for debugging)
+  sceneOrder  Int       @map("scene_order")
+
+  /// Is this an ending scene?
+  isEnding    Boolean   @default(false) @map("is_ending")
+
+  /// Ending quality (only if isEnding = true)
+  endingQuality EndingQuality? @map("ending_quality")
+
+  /// Ending summary (only if isEnding = true)
+  endingSummary String?  @map("ending_summary")
+
+  /// Decisions available at this scene
+  decisions   Decision[]
+
+  /// Decisions that lead to this scene
+  incomingDecisions Decision[] @relation("DecisionTarget")
+
+  /// Audio URL for TTS
+  audioUrl    String?   @map("audio_url")
+
+  @@index([storyId])
+  @@map("scenes")
+}
+
+/// A decision/choice at a scene
+model Decision {
+  id          String    @id @default(uuid())
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  /// Parent scene (where the decision appears)
+  sceneId     String    @map("scene_id")
+  scene       Scene     @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+
+  /// Choice text shown to player
+  text        String
+
+  /// Optional hint about consequence
+  consequenceHint String? @map("consequence_hint")
+
+  /// Target scene this decision leads to
+  nextSceneId String?   @map("next_scene_id")
+  nextScene   Scene?    @relation("DecisionTarget", fields: [nextSceneId], references: [id])
+
+  /// Order in which choices are displayed (1, 2, 3, 4)
+  choiceOrder Int       @default(1) @map("choice_order")
+
+  /// Statistics: how many times this was chosen
+  timesChosen Int       @default(0) @map("times_chosen")
+
+  @@index([sceneId])
+  @@map("decisions")
+}
+
+/// A user's playthrough of a story
+model Playthrough {
+  id          String    @id @default(uuid())
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  /// User identifier (from Supabase Auth)
+  userId      String    @map("user_id")
+
+  /// Story being played
+  storyId     String    @map("story_id")
+  story       Story     @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  /// Current scene (for in-progress playthroughs)
+  currentSceneId String? @map("current_scene_id")
+
+  /// Path taken as JSON array of scene IDs
+  pathTaken   Json      @default("[]") @map("path_taken")
+
+  /// Decisions made as JSON array of decision IDs
+  decisionsMade Json    @default("[]") @map("decisions_made")
+
+  /// Ending reached (null if not finished)
+  endingSceneId String? @map("ending_scene_id")
+
+  /// When the playthrough was completed
+  completedAt DateTime? @map("completed_at")
+
+  /// Duration in seconds
+  durationSeconds Int?  @map("duration_seconds")
+
+  @@index([userId])
+  @@index([storyId])
+  @@index([userId, storyId])
+  @@map("playthroughs")
+}

@@ -1,0 +1,568 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Tiptap Editor Styles */
+.ProseMirror {
+  outline: none;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #adb5bd;
+  pointer-events: none;
+  height: 0;
+}
+
+.ProseMirror blockquote {
+  border-left: 3px solid #e5e7eb;
+  padding-left: 1rem;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.ProseMirror pre {
+  background: #1f2937;
+  color: #e5e7eb;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+}
+
+.ProseMirror code {
+  background: #f3f4f6;
+  color: #1f2937;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.ProseMirror pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+}
+
+.ProseMirror hr {
+  border: none;
+  border-top: 2px solid #e5e7eb;
+  margin: 2rem 0;
+}
+
+.ProseMirror mark {
+  background-color: #fef08a;
+  padding: 0.125rem 0;
+}
+
+/* AI-generated text highlight */
+.ProseMirror .ai-generated {
+  background-color: rgba(147, 197, 253, 0.3);
+  border-bottom: 2px dashed #3b82f6;
+}
+
+/* Citation highlight */
+.ProseMirror .citation {
+  background-color: rgba(167, 243, 208, 0.3);
+  cursor: pointer;
+}
+
+.ProseMirror .citation:hover {
+  background-color: rgba(167, 243, 208, 0.5);
+}
+
+/* Dark mode editor styles */
+@media (prefers-color-scheme: dark) {
+  .ProseMirror p.is-editor-empty:first-child::before {
+    color: #6b7280;
+  }
+
+  .ProseMirror blockquote {
+    border-left-color: #4b5563;
+  }
+
+  .ProseMirror pre {
+    background: #111827;
+    color: #f3f4f6;
+  }
+
+  .ProseMirror code {
+    background: #374151;
+    color: #f3f4f6;
+  }
+
+  .ProseMirror hr {
+    border-top-color: #374151;
+  }
+
+  .ProseMirror mark {
+    background-color: #854d0e;
+    color: #fef08a;
+  }
+
+  .ProseMirror .ai-generated {
+    background-color: rgba(59, 130, 246, 0.2);
+    border-bottom-color: #60a5fa;
+  }
+
+  .ProseMirror .citation {
+    background-color: rgba(16, 185, 129, 0.2);
+  }
+
+  .ProseMirror .citation:hover {
+    background-color: rgba(16, 185, 129, 0.3);
+  }
+}
+
+/* Dark mode class support (for manual dark mode toggle) */
+.dark .ProseMirror p.is-editor-empty:first-child::before {
+  color: #6b7280;
+}
+
+.dark .ProseMirror blockquote {
+  border-left-color: #4b5563;
+}
+
+.dark .ProseMirror pre {
+  background: #111827;
+  color: #f3f4f6;
+}
+
+.dark .ProseMirror code {
+  background: #374151;
+  color: #f3f4f6;
+}
+
+.dark .ProseMirror hr {
+  border-top-color: #374151;
+}
+
+.dark .ProseMirror mark {
+  background-color: #854d0e;
+  color: #fef08a;
+}
+
+.dark .ProseMirror .ai-generated {
+  background-color: rgba(59, 130, 246, 0.2);
+  border-bottom-color: #60a5fa;
+}
+
+.dark .ProseMirror .citation {
+  background-color: rgba(16, 185, 129, 0.2);
+}
+
+.dark .ProseMirror .citation:hover {
+  background-color: rgba(16, 185, 129, 0.3);
+}
+
+/* Focus ring improvements */
+*:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.dark *:focus-visible {
+  outline-color: #60a5fa;
+}
+
+/* Button focus states */
+button:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.dark button:focus-visible,
+.dark [role="button"]:focus-visible {
+  outline-color: #60a5fa;
+}
+
+/* Form input focus states */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  ring: 2px;
+  ring-color: #3b82f6;
+}
+
+/* Scrollbar styling for dark mode */
+@media (prefers-color-scheme: dark) {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #1f2937;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #4b5563;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+  }
+}
+
+.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* Mobile responsive utilities */
+@media (max-width: 640px) {
+  /* Hide text labels on mobile, show only icons */
+  .btn-mobile-icon span:not(.sr-only) {
+    display: none;
+  }
+
+  /* Smaller padding on mobile */
+  .btn-mobile-icon {
+    padding: 0.5rem;
+  }
+
+  /* Adjust panel widths on mobile */
+  .panel-mobile {
+    width: 100% !important;
+    max-width: 100vw;
+  }
+}
+
+/* Sidebar panels mobile adjustments */
+@media (max-width: 768px) {
+  .sidebar-panel {
+    width: 100% !important;
+    max-width: 100vw;
+  }
+}
+
+/* Touch-friendly tap targets */
+@media (hover: none) and (pointer: coarse) {
+  button,
+  [role="button"],
+  a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Prevent text selection on buttons */
+button,
+[role="button"] {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Smooth transitions */
+.transition-panel {
+  transition: transform 0.2s ease-in-out, opacity 0.2s ease-in-out;
+}
+
+/* Notification slide-up animation */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.2s ease-out;
+}
+
+/* Loading skeleton animation */
+@keyframes skeleton-loading {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+}
+
+.dark .skeleton {
+  background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+  background-size: 200% 100%;
+}
+
+/* ============================================
+   Chronicle Custom Block Styles
+   ============================================ */
+
+/* Claim Blocks */
+.ProseMirror .claim-block {
+  border-left: 4px solid;
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+  border-radius: 0 0.5rem 0.5rem 0;
+  position: relative;
+}
+
+.ProseMirror .claim-block.claim-pro {
+  border-left-color: #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.ProseMirror .claim-block.claim-con {
+  border-left-color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.ProseMirror .claim-block.claim-neutral {
+  border-left-color: #6b7280;
+  background: rgba(107, 114, 128, 0.1);
+}
+
+.ProseMirror .claim-block.canonical {
+  border-left-width: 6px;
+}
+
+.ProseMirror .claim-block.draft {
+  border-left-style: dashed;
+}
+
+.ProseMirror .claim-block::before {
+  content: "◎ Claim";
+  position: absolute;
+  top: -0.6rem;
+  left: 0.5rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0 0.25rem;
+  background: var(--background);
+  color: #6b7280;
+}
+
+/* Motif Blocks */
+.ProseMirror .motif-block {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
+  color: white;
+  padding: 0.125rem 0.5rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.ProseMirror .motif-block:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(168, 85, 247, 0.4);
+}
+
+/* Thread Blocks */
+.ProseMirror .thread-block {
+  border: 2px solid;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin: 1rem 0;
+  position: relative;
+}
+
+.ProseMirror .thread-block.thread-open {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.05);
+}
+
+.ProseMirror .thread-block.thread-hinted {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.ProseMirror .thread-block.thread-resolved {
+  border-color: #22c55e;
+  background: rgba(34, 197, 94, 0.05);
+}
+
+.ProseMirror .thread-block .thread-indicator {
+  position: absolute;
+  top: -0.75rem;
+  left: 1rem;
+  background: var(--background);
+  padding: 0 0.5rem;
+  font-size: 1rem;
+}
+
+.ProseMirror .thread-block .thread-content {
+  padding-left: 0.5rem;
+}
+
+/* Note Blocks (NOT embedded) */
+.ProseMirror .note-block {
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+  overflow: hidden;
+}
+
+.ProseMirror .note-block .note-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background: #fde68a;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.ProseMirror .note-block .note-type-indicator {
+  color: #92400e;
+}
+
+.ProseMirror .note-block .note-badge {
+  background: #dc2626;
+  color: white;
+  padding: 0.125rem 0.5rem;
+  border-radius: 1rem;
+  font-size: 0.625rem;
+  text-transform: uppercase;
+}
+
+.ProseMirror .note-block .note-content {
+  padding: 0.75rem;
+}
+
+.ProseMirror .note-block.collapsed .note-content {
+  display: none;
+}
+
+.ProseMirror .note-block.note-todo .note-header {
+  background: #dbeafe;
+}
+
+.ProseMirror .note-block.note-research .note-header {
+  background: #e0e7ff;
+}
+
+.ProseMirror .note-block.note-question .note-header {
+  background: #fce7f3;
+}
+
+/* Dark mode for custom blocks */
+@media (prefers-color-scheme: dark) {
+  .ProseMirror .claim-block.claim-pro {
+    background: rgba(34, 197, 94, 0.15);
+  }
+
+  .ProseMirror .claim-block.claim-con {
+    background: rgba(239, 68, 68, 0.15);
+  }
+
+  .ProseMirror .claim-block.claim-neutral {
+    background: rgba(107, 114, 128, 0.15);
+  }
+
+  .ProseMirror .note-block {
+    background: #422006;
+    border-color: #854d0e;
+  }
+
+  .ProseMirror .note-block .note-header {
+    background: #78350f;
+  }
+
+  .ProseMirror .note-block .note-type-indicator {
+    color: #fcd34d;
+  }
+}
+
+/* ========================================
+   Native App Styles (Capacitor/PWA)
+   ======================================== */
+
+/* Safe area padding for notched devices */
+.native-app {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* iOS-specific styles */
+.platform-ios {
+  /* Disable text selection highlight on iOS */
+  -webkit-tap-highlight-color: transparent;
+  /* Prevent overscroll bounce */
+  overscroll-behavior: none;
+}
+
+/* Android-specific styles */
+.platform-android {
+  /* Smoother scrolling on Android */
+  scroll-behavior: smooth;
+}
+
+/* Keyboard-open state (set by NativeInit) */
+.keyboard-open {
+  /* Adjust layout when keyboard is visible */
+}
+
+/* Fixed audio player adjustments for native */
+.native-app .audio-player-fixed {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem);
+}
+
+/* Standalone PWA detection */
+@media (display-mode: standalone) {
+  body {
+    /* Match native app behavior for installed PWA */
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+}

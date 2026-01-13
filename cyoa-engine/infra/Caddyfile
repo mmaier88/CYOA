@@ -1,0 +1,46 @@
+# CYOA Engine Caddy Configuration
+{
+	auto_https off
+}
+
+# Production API (port 80)
+:80 {
+	reverse_proxy api:3000
+
+	log {
+		output stdout
+		format json
+	}
+
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	handle_errors {
+		respond "{err.status_code} {err.status_text}"
+	}
+}
+
+# Staging API (port 3001)
+:3001 {
+	reverse_proxy api-staging:3000
+
+	log {
+		output stdout
+		format json
+	}
+
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	handle_errors {
+		respond "{err.status_code} {err.status_text}"
+	}
+}

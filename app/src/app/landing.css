@@ -1,0 +1,515 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Source+Sans+3:wght@300;400;500&display=swap');
+
+.landing-page {
+  --night-deepest: #0a0f18;
+  --night-deep: #141e30;
+  --night-mid: #1a2744;
+  --night-light: #243354;
+  --moon-light: #faf6ed;
+  --moon-mid: #f5f0e6;
+  --moon-soft: #e8e0d0;
+  --amber-warm: #d4a574;
+  --amber-glow: #e8c49a;
+  --rose-soft: #c9a8a8;
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+  --font-sans: 'Source Sans 3', sans-serif;
+
+  font-family: var(--font-sans);
+  background: var(--night-deep);
+  color: var(--moon-mid);
+  line-height: 1.7;
+  overflow-x: hidden;
+  min-height: 100vh;
+  isolation: isolate;
+}
+
+/* ========== HERO - FULL BLEED IMMERSIVE ========== */
+.landing-page .hero {
+  position: relative;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+
+.landing-page .hero-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  z-index: 1;
+}
+
+.landing-page .hero-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: linear-gradient(
+    to top,
+    rgba(10, 15, 24, 0.95) 0%,
+    rgba(10, 15, 24, 0.7) 30%,
+    rgba(10, 15, 24, 0.3) 60%,
+    rgba(10, 15, 24, 0.1) 100%
+  );
+}
+
+.landing-page .hero-content {
+  position: relative;
+  z-index: 10;
+  max-width: 800px;
+  padding: 6rem 4rem;
+  animation: fadeUp 1.5s ease-out;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.landing-page .hero-tagline {
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--amber-warm);
+  margin-bottom: 1.5rem;
+  opacity: 0;
+  animation: fadeUp 1s ease-out 0.3s forwards;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+.landing-page .hero-headline {
+  font-family: var(--font-serif);
+  font-size: clamp(2.8rem, 6vw, 4.5rem);
+  font-weight: 500;
+  line-height: 1.15;
+  color: var(--moon-light);
+  margin-bottom: 1.5rem;
+  letter-spacing: -0.02em;
+  opacity: 0;
+  animation: fadeUp 1s ease-out 0.5s forwards;
+}
+
+.landing-page .hero-subheadline {
+  font-size: 1.25rem;
+  font-weight: 300;
+  color: var(--moon-soft);
+  max-width: 540px;
+  margin-bottom: 1.5rem;
+  line-height: 1.7;
+  opacity: 0;
+  animation: fadeUp 1s ease-out 0.7s forwards;
+}
+
+.landing-page .hero-audio-badge {
+  font-size: 0.95rem;
+  font-weight: 400;
+  color: var(--amber-glow);
+  margin-bottom: 2rem;
+  opacity: 0;
+  animation: fadeUp 1s ease-out 0.8s forwards;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.landing-page .hero-audio-badge::before {
+  content: '🎧';
+  font-size: 1.1rem;
+}
+
+.landing-page .hero-cta-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.landing-page .hero-micro-cue {
+  font-size: 0.85rem;
+  font-weight: 300;
+  color: var(--moon-soft);
+  opacity: 0;
+  animation: fadeUp 1s ease-out 1.1s forwards;
+  margin-left: 0.5rem;
+}
+
+.landing-page .cta-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: var(--font-sans);
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--night-deep);
+  background: linear-gradient(135deg, var(--amber-warm) 0%, var(--amber-glow) 100%);
+  padding: 1.1rem 2.5rem;
+  border-radius: 50px;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 4px 20px rgba(212, 165, 116, 0.3);
+  opacity: 0;
+  animation: fadeUp 1s ease-out 0.9s forwards;
+}
+
+.landing-page .cta-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(212, 165, 116, 0.4);
+}
+
+.landing-page .cta-button svg {
+  width: 18px;
+  height: 18px;
+  transition: transform 0.2s ease;
+}
+
+.landing-page .cta-button:hover svg {
+  transform: translateX(3px);
+}
+
+/* ========== SECTIONS ========== */
+.landing-page .section {
+  padding: 6rem 4rem;
+}
+
+.landing-page .section-inner {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.landing-page .section-dark {
+  background: var(--night-deep);
+}
+
+.landing-page .section-warm {
+  background: linear-gradient(180deg, var(--night-mid) 0%, var(--night-deep) 100%);
+}
+
+.landing-page .section-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--amber-warm);
+  margin-bottom: 1rem;
+}
+
+.landing-page .section-headline {
+  font-family: var(--font-serif);
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--moon-light);
+  margin-bottom: 1.5rem;
+}
+
+.landing-page .section-body {
+  font-size: 1.1rem;
+  color: var(--moon-soft);
+  max-width: 640px;
+}
+
+.landing-page .section-body.center {
+  margin: 0 auto 2.5rem;
+  text-align: center;
+}
+
+/* ========== HOW IT WORKS ========== */
+.landing-page .how-it-works {
+  padding: 6rem 4rem;
+  background: var(--night-mid);
+}
+
+.landing-page .steps-container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.landing-page .steps-header {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.landing-page .steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+}
+
+.landing-page .step-card {
+  text-align: center;
+  padding: 2rem;
+  background: rgba(20, 30, 48, 0.5);
+  border: 1px solid rgba(250, 246, 237, 0.06);
+  border-radius: 20px;
+  transition: transform 0.3s ease, background 0.3s ease;
+}
+
+.landing-page .step-card:hover {
+  transform: translateY(-4px);
+  background: rgba(20, 30, 48, 0.7);
+}
+
+.landing-page .step-number {
+  font-family: var(--font-serif);
+  font-size: 2.5rem;
+  font-weight: 400;
+  color: var(--amber-warm);
+  opacity: 0.5;
+  margin-bottom: 1rem;
+}
+
+.landing-page .step-title {
+  font-family: var(--font-serif);
+  font-size: 1.3rem;
+  font-weight: 500;
+  color: var(--moon-light);
+  margin-bottom: 0.75rem;
+}
+
+.landing-page .step-desc {
+  font-size: 0.95rem;
+  color: var(--moon-soft);
+  opacity: 0.8;
+  line-height: 1.6;
+}
+
+/* ========== FINAL CTA ========== */
+.landing-page .final-cta {
+  text-align: center;
+  padding: 8rem 4rem;
+  background: linear-gradient(180deg, var(--night-deep) 0%, var(--night-deepest) 100%);
+}
+
+.landing-page .final-cta .section-headline {
+  margin-bottom: 1rem;
+}
+
+.landing-page .final-cta .cta-button {
+  opacity: 1;
+  animation: none;
+}
+
+/* ========== FOOTER ========== */
+.landing-page .landing-footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  padding: 1.5rem 4rem;
+  text-align: center;
+}
+
+.landing-page .footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.landing-page .footer-links a {
+  font-size: 0.9rem;
+  color: var(--moon-soft);
+  text-decoration: none;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.landing-page .footer-links a:hover {
+  opacity: 1;
+}
+
+/* Footer at bottom of page (outside hero) */
+.landing-page .landing-footer-bottom {
+  padding: 2rem 4rem;
+  text-align: center;
+  background: var(--night-deepest);
+}
+
+/* ========== STAFF PICKS ========== */
+.landing-page .staff-picks {
+  padding: 6rem 4rem;
+  background: var(--night-mid);
+}
+
+.landing-page .staff-picks-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.landing-page .staff-picks-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.landing-page .staff-picks-loading {
+  display: flex;
+  justify-content: center;
+  padding: 4rem 0;
+}
+
+.landing-page .loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--night-light);
+  border-top-color: var(--amber-warm);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.landing-page .staff-picks-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1.5rem;
+}
+
+.landing-page .staff-pick-card {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.3s ease;
+}
+
+.landing-page .staff-pick-card:hover {
+  transform: translateY(-8px);
+}
+
+.landing-page .staff-pick-cover {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--night-deep);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  margin-bottom: 0.75rem;
+}
+
+.landing-page .staff-pick-image {
+  object-fit: cover;
+}
+
+.landing-page .staff-pick-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--night-deep) 0%, var(--night-light) 100%);
+}
+
+.landing-page .staff-pick-info {
+  padding: 0 0.25rem;
+}
+
+.landing-page .staff-pick-title {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--moon-light);
+  margin-bottom: 0.25rem;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.landing-page .staff-pick-question {
+  font-size: 0.8rem;
+  color: var(--moon-soft);
+  opacity: 0.7;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 1100px) {
+  .landing-page .staff-picks-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .landing-page .steps-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .landing-page .staff-picks {
+    padding: 4rem 1.5rem;
+  }
+
+  .landing-page .staff-picks-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .landing-page .staff-pick-title {
+    font-size: 0.9rem;
+  }
+
+  .landing-page .staff-pick-question {
+    font-size: 0.75rem;
+  }
+
+  .landing-page .hero-content {
+    padding: 3rem 1.5rem 6rem;
+  }
+
+  .landing-page .hero-headline {
+    font-size: clamp(2rem, 8vw, 3rem);
+  }
+
+  .landing-page .hero-subheadline {
+    font-size: 1.0625rem;
+  }
+
+  .landing-page .cta-button {
+    font-size: 1rem;
+    padding: 1rem 2rem;
+  }
+
+  .landing-page .section {
+    padding: 4rem 2rem;
+  }
+
+  .landing-page .how-it-works {
+    padding: 4rem 2rem;
+  }
+
+  .landing-page .final-cta {
+    padding: 5rem 2rem;
+  }
+
+  .landing-page .landing-footer {
+    padding: 1rem 1.5rem;
+  }
+
+  .landing-page .footer-links {
+    gap: 1.5rem;
+  }
+
+  .landing-page .footer-links a {
+    font-size: 0.8125rem;
+  }
+}
