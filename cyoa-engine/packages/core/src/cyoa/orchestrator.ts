@@ -561,6 +561,13 @@ const GeneratedSceneSchema = z.object({
 });
 
 /**
+ * Case-insensitive enum helper for LLM robustness
+ */
+const qualityEnum = z.string().transform(s => s.toLowerCase()).pipe(
+  z.enum(['bad', 'neutral', 'good', 'best', 'secret'])
+).default('neutral');
+
+/**
  * Schema for world rules generation - with defaults for robustness
  */
 const WorldRulesSchema = z.object({
@@ -572,7 +579,7 @@ const WorldRulesSchema = z.object({
   })).default([]),
   rules: z.array(z.string()).default([]),
   possible_endings: z.array(z.object({
-    quality: z.enum(['bad', 'neutral', 'good', 'best', 'secret']).default('neutral'),
+    quality: qualityEnum,
     condition: z.string().default('Through player choices'),
     summary: z.string().default('Story concludes')
   })).default([
