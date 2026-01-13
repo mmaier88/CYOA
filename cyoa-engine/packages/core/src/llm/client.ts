@@ -18,7 +18,7 @@ export interface LLMClientConfig {
 export interface RequestContext {
   jobId: string;
   sceneId?: string;
-  agent: 'writer' | 'editor' | 'validator' | 'fingerprint' | 'planner';
+  agent: 'writer' | 'editor' | 'validator' | 'fingerprint' | 'planner' | 'cyoa-orchestrator' | 'cyoa-editor';
   attempt?: number;
 }
 
