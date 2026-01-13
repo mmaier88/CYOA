@@ -561,21 +561,25 @@ const GeneratedSceneSchema = z.object({
 });
 
 /**
- * Schema for world rules generation
+ * Schema for world rules generation - with defaults for robustness
  */
 const WorldRulesSchema = z.object({
-  setting: z.string(),
+  setting: z.string().or(z.object({}).passthrough().transform(obj => JSON.stringify(obj))),
   key_characters: z.array(z.object({
     name: z.string(),
-    role: z.string(),
-    relationship_to_player: z.string()
-  })),
-  rules: z.array(z.string()),
+    role: z.string().default('supporting'),
+    relationship_to_player: z.string().default('acquaintance')
+  })).default([]),
+  rules: z.array(z.string()).default([]),
   possible_endings: z.array(z.object({
-    quality: z.enum(['bad', 'neutral', 'good', 'best', 'secret']),
-    condition: z.string(),
-    summary: z.string()
-  }))
+    quality: z.enum(['bad', 'neutral', 'good', 'best', 'secret']).default('neutral'),
+    condition: z.string().default('Through player choices'),
+    summary: z.string().default('Story concludes')
+  })).default([
+    { quality: 'bad', condition: 'Poor choices', summary: 'Unfavorable outcome' },
+    { quality: 'good', condition: 'Good choices', summary: 'Positive outcome' },
+    { quality: 'best', condition: 'Best choices', summary: 'Optimal outcome' }
+  ])
 });
 
 /**

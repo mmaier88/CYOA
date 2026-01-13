@@ -16,13 +16,13 @@ export const CYOAEditorOutputSchema = z.object({
   // For ACCEPT - tightened version of the scene
   edited_content: z.string().optional(),
 
-  // Quality scores (0-10)
+  // Quality scores (0-10) - all with defaults for robustness
   quality: z.object({
-    immersion: z.number().min(0).max(10).describe('Sensory details, vivid description'),
-    pacing: z.number().min(0).max(10).describe('Forward movement, appropriate length'),
-    voice: z.number().min(0).max(10).describe('Second person consistency, engagement'),
-    choices: z.number().min(0).max(10).describe('Distinct, meaningful choices (N/A for endings)')
-  }),
+    immersion: z.number().min(0).max(10).default(7).describe('Sensory details, vivid description'),
+    pacing: z.number().min(0).max(10).default(7).describe('Forward movement, appropriate length'),
+    voice: z.number().min(0).max(10).default(7).describe('Second person consistency, engagement'),
+    choices: z.number().min(0).max(10).default(7).describe('Distinct, meaningful choices (N/A for endings)')
+  }).default({ immersion: 7, pacing: 7, voice: 7, choices: 7 }),
 
   // For REWRITE - specific improvements needed
   rewrite_instructions: z.string().optional(),
@@ -31,7 +31,7 @@ export const CYOAEditorOutputSchema = z.object({
   regenerate_reason: z.string().optional(),
 
   // Brief explanation of the decision
-  reason: z.string()
+  reason: z.string().default('Scene evaluated')
 });
 
 export type CYOAEditorOutput = z.infer<typeof CYOAEditorOutputSchema>;
