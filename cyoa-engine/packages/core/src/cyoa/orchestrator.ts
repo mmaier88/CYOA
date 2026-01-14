@@ -324,6 +324,13 @@ Important: The player is the protagonist. All choices should feel meaningful.`;
 
       const rawContent = response.content;
 
+      console.log(`[${this.jobId}] Scene ${sceneId} raw response:`, {
+        hasNarrative: !!rawContent.narrative,
+        narrativeLength: rawContent.narrative?.length || 0,
+        decisionsCount: rawContent.decisions?.length || 0,
+        decisions: rawContent.decisions
+      });
+
       // Build decisions with placeholder leads_to
       const decisions: Decision[] = (rawContent.decisions || []).map((d: any, i: number) => ({
         id: `${sceneId}_decision_${i}`,
@@ -332,6 +339,17 @@ Important: The player is the protagonist. All choices should feel meaningful.`;
         leads_to: '', // Will be filled in during connectDecisions
         choice_order: i + 1
       }));
+
+      // Validate non-ending scenes have decisions
+      if (!isEnding && decisions.length === 0 && attempts < CYOA_CONSTANTS.MAX_SCENE_REGENERATIONS) {
+        console.warn(`[${this.jobId}] Scene ${sceneId} missing decisions, retrying...`);
+        additionalConstraints = [
+          'CRITICAL: You MUST include the "decisions" array with player choices.',
+          'The decisions array was empty in your previous response.',
+          `Include exactly ${decisionsToGenerate} decisions in your JSON output.`
+        ];
+        continue; // Retry
+      }
 
       // Editor review (skip in draft mode for speed, only review key scenes)
       if (this.mode === 'polished' || sceneType === 'intro' || isEnding) {
@@ -468,8 +486,14 @@ Each choice should feel distinct and lead to different outcomes.
 - Length: ${diamond_config.words_per_scene.min}-${diamond_config.words_per_scene.max} words
 - Address ${player.name} as "you"
 - Second person perspective
-- ${decisionsToGenerate > 0 ? `Exactly ${decisionsToGenerate} decisions` : 'No decisions (ending)'}
 - Choices should feel meaningful, not arbitrary
+
+## JSON OUTPUT FORMAT
+Return a JSON object with:
+- "narrative": The scene content (string)
+${decisionsToGenerate > 0 ? `- "decisions": Array of exactly ${decisionsToGenerate} choice objects, each with:
+  - "text": The choice text (1-2 sentences, action-focused)
+  - "consequence_hint": Optional hint about what might happen (subtle, no spoilers)` : '- "decisions": Empty array [] (this is an ending scene)'}
 `;
 
     // Add editor constraints from previous failed attempts
@@ -556,7 +580,7 @@ const GeneratedSceneSchema = z.object({
   decisions: z.array(z.object({
     text: z.string().describe('Choice text (1-2 sentences)'),
     consequence_hint: z.string().optional().describe('Subtle hint about outcome')
-  })).optional().describe('Player choices'),
+  })).default([]).describe('Player choices - REQUIRED for non-ending scenes'),
   ending_summary: z.string().optional().describe('Brief ending description if this is an ending')
 });
 
@@ -606,15 +630,16 @@ The player should feel like the protagonist of their own adventure.`;
 /**
  * System prompt for scene writing
  */
-const SCENE_WRITER_SYSTEM_PROMPT = `You write individual scenes for interactive fiction. Each scene should:
+const SCENE_WRITER_SYSTEM_PROMPT = `You write individual scenes for interactive fiction. You ALWAYS respond with valid JSON.
 
+## Scene Requirements
 1. Be written in second person ("you")
 2. Use present tense for immediacy
 3. Be vivid and immersive
 4. End with clear, distinct choices (unless it's an ending)
 5. Be between 250-600 words
 
-Choices should:
+## Choice Requirements (for non-ending scenes)
 - Feel meaningfully different
 - Not have an obviously "correct" answer
 - Hint at consequences without spoiling them
@@ -625,7 +650,14 @@ Example good choices:
 - "Demand answers before going further"
 - "Slip away while they're distracted"
 
-Example bad choices:
-- "Go through door A"
-- "Go through door B"
-- "Go through door C"`;
+## JSON Output Format
+You MUST respond with a JSON object containing:
+{
+  "narrative": "The scene content here...",
+  "decisions": [
+    {"text": "First choice text", "consequence_hint": "optional hint"},
+    {"text": "Second choice text", "consequence_hint": "optional hint"}
+  ]
+}
+
+For ending scenes, the "decisions" array should be empty [].`;

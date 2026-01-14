@@ -19,6 +19,62 @@ const QUEUE_NAME = process.env.QUEUE_PREFIX
 const storyQueue = new Queue(QUEUE_NAME, { connection: redisConnection });
 
 /**
+ * GET /v1/stories
+ * List all completed stories
+ */
+router.get('/', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { limit = 20, offset = 0, genre } = req.query;
+
+    const where: any = {};
+    if (genre) where.genre = genre;
+
+    const stories = await prisma.story.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: Number(limit),
+      skip: Number(offset),
+      select: {
+        id: true,
+        title: true,
+        genre: true,
+        premise: true,
+        tone: true,
+        difficulty: true,
+        totalScenes: true,
+        totalEndings: true,
+        coverUrl: true,
+        createdAt: true
+      }
+    });
+
+    // Get job IDs for each story
+    const storyIds = stories.map(s => s.id);
+    const jobs = await prisma.storyJob.findMany({
+      where: { storyId: { in: storyIds } },
+      select: { id: true, storyId: true, input: true }
+    });
+
+    const jobMap = new Map(jobs.map(j => [j.storyId, j]));
+
+    const storiesWithJobId = stories.map(s => {
+      const job = jobMap.get(s.id);
+      const input = job?.input as any;
+      return {
+        ...s,
+        jobId: job?.id,
+        playerName: input?.player_name
+      };
+    });
+
+    res.json({ stories: storiesWithJobId });
+  } catch (error) {
+    console.error('Failed to list stories:', error);
+    res.status(500).json({ error: 'Failed to list stories' });
+  }
+});
+
+/**
  * POST /v1/stories
  * Create a new story generation job
  */
@@ -299,11 +355,18 @@ router.post('/:id/play/:playthroughId/decide', async (req: Request, res: Respons
       return;
     }
 
+    // Get the job to find the actual story ID
+    const job = await prisma.storyJob.findUnique({ where: { id } });
+    if (!job || !job.storyId) {
+      res.status(404).json({ error: 'Story not found' });
+      return;
+    }
+
     const playthrough = await prisma.playthrough.findUnique({
       where: { id: playthroughId }
     });
 
-    if (!playthrough || playthrough.storyId !== id) {
+    if (!playthrough || playthrough.storyId !== job.storyId) {
       res.status(404).json({ error: 'Playthrough not found' });
       return;
     }
@@ -393,11 +456,18 @@ router.get('/:id/play/:playthroughId', async (req: Request, res: Response): Prom
   try {
     const { id, playthroughId } = req.params;
 
+    // Get the job to find the actual story ID
+    const job = await prisma.storyJob.findUnique({ where: { id } });
+    if (!job || !job.storyId) {
+      res.status(404).json({ error: 'Story not found' });
+      return;
+    }
+
     const playthrough = await prisma.playthrough.findUnique({
       where: { id: playthroughId }
     });
 
-    if (!playthrough || playthrough.storyId !== id) {
+    if (!playthrough || playthrough.storyId !== job.storyId) {
       res.status(404).json({ error: 'Playthrough not found' });
       return;
     }
