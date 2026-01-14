@@ -15,6 +15,7 @@ import {
   EndingQuality
 } from './state.js';
 import { CYOAEditorAgent, CYOAEditorOutput, CYOA_POLISHED_PROMPT_ADDITION } from './editor.js';
+import { buildCondensedStyleGuide, GUIDING_SENTENCE } from './style-guide.js';
 
 /**
  * Generation mode - affects prose quality vs speed tradeoff
@@ -428,17 +429,21 @@ Important: The player is the protagonist. All choices should feel meaningful.`;
   ): string {
     const { genre, tone, difficulty, player, world_rules, diamond_config } = state;
 
-    let prompt = `Generate a scene for an interactive ${genre} story.
+    let prompt = `${GUIDING_SENTENCE}
+
+Generate a scene for an interactive ${genre} story.
 
 ## STORY CONTEXT
 Setting: ${world_rules?.setting || 'Unknown'}
 Tone: ${tone}
-Player: ${player.name}${player.personality ? ` (${player.personality})` : ''}
+Protagonist: ${player.name}${player.personality ? ` (${player.personality})` : ''}
 
 ## SCENE INFO
 Scene ID: ${sceneId}
 Type: ${sceneType}
 Level: ${level + 1} of ${diamond_config.max_levels}
+
+${buildCondensedStyleGuide()}
 `;
 
     if (previousContext) {
@@ -452,31 +457,35 @@ ${previousContext}
       prompt += `
 ## TASK
 Write the opening scene that:
-1. Introduces ${player.name} and their situation
-2. Establishes the world and stakes
-3. Ends with ${decisionsToGenerate} meaningful choices
+1. Introduces ${player.name} and their situation using THIRD-PERSON narration
+2. Establishes the world and stakes with sensory, cinematic prose
+3. Ends with a clear decision moment: transition to SECOND-PERSON for the choice framing only
+4. Provides ${decisionsToGenerate} meaningful choices
 
-The player should feel agency immediately.
+Start in observation mode. Let tension build. Then offer agency.
 `;
     } else if (sceneType === 'ending') {
       prompt += `
 ## TASK
 Write a ${endingQuality || 'neutral'} ending that:
-1. Resolves the story based on choices made
-2. Gives a satisfying conclusion
-3. Makes the player feel their choices mattered
+1. Resolves the story using THIRD-PERSON narration
+2. Gives a satisfying conclusion - show, don't tell
+3. May use a brief FIRST-PERSON moment (1-3 sentences) for emotional climax if appropriate
+4. No decisions needed - this is a terminal scene
 
 Ending quality: ${endingQuality}
-No decisions needed - this is a terminal scene.
 `;
     } else {
       prompt += `
 ## TASK
 Write a scene that:
-1. Continues from the previous events
-2. Raises stakes or reveals new information
-3. Ends with ${decisionsToGenerate} meaningful choices
+1. Continues from previous events using THIRD-PERSON narration
+2. Builds atmosphere and tension before the choice
+3. Raises stakes or reveals new information through action and description
+4. Transitions to SECOND-PERSON only for the final choice framing (1-2 sentences)
+5. Provides ${decisionsToGenerate} meaningful choices
 
+Follow the rhythm: Observe → Tension → Decide
 Each choice should feel distinct and lead to different outcomes.
 `;
     }
@@ -484,13 +493,14 @@ Each choice should feel distinct and lead to different outcomes.
     prompt += `
 ## REQUIREMENTS
 - Length: ${diamond_config.words_per_scene.min}-${diamond_config.words_per_scene.max} words
-- Address ${player.name} as "you"
-- Second person perspective
+- PRIMARY: Close third-person narration for ${player.name} (70-80% of content)
+- DECISIONS: Second-person "you" ONLY to frame the final choices (1-2 sentences max)
+- Cinematic, sensory prose - let actions imply emotion
 - Choices should feel meaningful, not arbitrary
 
 ## JSON OUTPUT FORMAT
 Return a JSON object with:
-- "narrative": The scene content (string)
+- "narrative": The scene content (string) - third-person narration, second-person only for choice framing
 ${decisionsToGenerate > 0 ? `- "decisions": Array of exactly ${decisionsToGenerate} choice objects, each with:
   - "text": The choice text (1-2 sentences, action-focused)
   - "consequence_hint": Optional hint about what might happen (subtle, no spoilers)` : '- "decisions": Empty array [] (this is an ending scene)'}

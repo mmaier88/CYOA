@@ -4,3 +4,4 @@
 export * from './state.js';
 export * from './orchestrator.js';
 export * from './editor.js';
+export * from './style-guide.js';
