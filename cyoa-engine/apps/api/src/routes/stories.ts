@@ -438,7 +438,7 @@ router.post('/:id/scenes/:sceneId/audio', async (req: Request, res: Response): P
       console.log(`[Audio] Cache hit for scene ${sceneId}`);
       res.json({
         status: 'ready',
-        audio_url: `/v1/stories/${id}/scenes/${sceneId}/audio/stream?key=${encodeURIComponent(cacheKey)}`,
+        audio_url: `/stories/${id}/scenes/${sceneId}/audio/stream?key=${encodeURIComponent(cacheKey)}`,
         duration_seconds: cached.duration
       });
       return;
