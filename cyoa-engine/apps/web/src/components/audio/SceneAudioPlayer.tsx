@@ -103,24 +103,9 @@ export function SceneAudioPlayer({ storyId, storyTitle, sceneId }: SceneAudioPla
     seekTo(time);
   };
 
-  // If not visible, show listen button
-  if (!isVisible) {
-    return (
-      <button
-        onClick={handleListen}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-full
-                   bg-primary/10 border border-primary/30 text-primary
-                   hover:bg-primary/20 transition-colors text-sm font-medium"
-      >
-        <VolumeIcon />
-        Listen to this scene
-      </button>
-    );
-  }
-
   return (
     <>
-      {/* Hidden audio element */}
+      {/* Audio element - always rendered so ref is available */}
       <audio
         ref={audioRef}
         onTimeUpdate={(e) => updateProgress(e.currentTarget.currentTime)}
@@ -130,7 +115,21 @@ export function SceneAudioPlayer({ storyId, storyTitle, sceneId }: SceneAudioPla
         onPause={() => useAudioStore.setState({ isPlaying: false })}
       />
 
+      {/* If not visible, show listen button */}
+      {!isVisible && (
+        <button
+          onClick={handleListen}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full
+                     bg-primary/10 border border-primary/30 text-primary
+                     hover:bg-primary/20 transition-colors text-sm font-medium"
+        >
+          <VolumeIcon />
+          Listen to this scene
+        </button>
+      )}
+
       {/* Fixed bottom player */}
+      {isVisible && (
       <div className="fixed bottom-0 left-0 right-0 bg-surface/98 backdrop-blur-lg border-t border-border p-4 z-50">
         <div className="max-w-2xl mx-auto">
           {/* Title and close */}
@@ -210,9 +209,10 @@ export function SceneAudioPlayer({ storyId, storyTitle, sceneId }: SceneAudioPla
           </div>
         </div>
       </div>
+      )}
 
       {/* Spacer to prevent content from being hidden behind player */}
-      <div className="h-24" />
+      {isVisible && <div className="h-24" />}
     </>
   );
 }
