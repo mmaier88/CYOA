@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { AudioScene, AudioCache, PlaybackSpeed } from '../lib/audio/types';
+import type { AudioCache, PlaybackSpeed } from '../lib/audio/types';
 import { PLAYBACK_SPEEDS } from '../lib/audio/types';
 
 interface AudioState {

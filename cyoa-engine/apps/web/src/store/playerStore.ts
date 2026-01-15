@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type { Story, Scene, EndingQuality } from '../api/types';
 import { getStory, startPlaythrough, makeDecision, getUserId, getPlaythrough } from '../api/client';
 

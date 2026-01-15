@@ -1,4 +1,4 @@
-import { useTypographyStore, FontFamily, FontSize } from '../../store/typographyStore';
+import { useTypographyStore, type FontFamily, type FontSize } from '../../store/typographyStore';
 
 // Settings icon
 const SettingsIcon = () => (

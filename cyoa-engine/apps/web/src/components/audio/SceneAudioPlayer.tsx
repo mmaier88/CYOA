@@ -65,7 +65,6 @@ export function SceneAudioPlayer({ storyId, storyTitle, sceneId }: SceneAudioPla
     progress,
     duration,
     playbackRate,
-    currentSceneId,
     setAudioRef,
     loadStory,
     playScene,
