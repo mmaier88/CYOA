@@ -24,7 +24,7 @@ COPY packages/core ./packages/core/
 
 # Generate Prisma client (use dummy URL for build, real URL provided at runtime)
 ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
-RUN npx prisma generate
+RUN npm exec prisma generate
 
 # Build packages
 RUN npm run build --workspace=packages/core
@@ -50,7 +50,7 @@ COPY --from=builder /app/prisma ./prisma
 
 # Generate Prisma client in production (dummy URL for generate, real URL at runtime)
 ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
-RUN npx prisma generate
+RUN npm exec prisma generate
 ENV DATABASE_URL=""
 
 EXPOSE 3000
