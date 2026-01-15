@@ -48,8 +48,10 @@ COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/package.json ./apps/api/
 COPY --from=builder /app/prisma ./prisma
 
-# Generate Prisma client in production
+# Generate Prisma client in production (dummy URL for generate, real URL at runtime)
+ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
 RUN npx prisma generate
+ENV DATABASE_URL=""
 
 EXPOSE 3000
 
