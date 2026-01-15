@@ -417,11 +417,16 @@ router.post('/:id/scenes/:sceneId/audio', async (req: Request, res: Response): P
       return;
     }
 
-    // Get the scene
+    // Get the scene with decisions
     const scene = await prisma.scene.findFirst({
       where: {
         id: sceneId,
         storyId: job.storyId
+      },
+      include: {
+        decisions: {
+          orderBy: { choiceOrder: 'asc' }
+        }
       }
     });
 
@@ -430,8 +435,15 @@ router.post('/:id/scenes/:sceneId/audio', async (req: Request, res: Response): P
       return;
     }
 
+    // Build full text including choices
+    let fullText = scene.content;
+    if (scene.decisions && scene.decisions.length > 0) {
+      const choiceTexts = scene.decisions.map((d, i) => `${i + 1}. ${d.text}`);
+      fullText += '\n\nWhat do you do?\n' + choiceTexts.join('\n');
+    }
+
     // Check cache
-    const cacheKey = `${sceneId}-${voiceId}-${computeContentHash(scene.content)}`;
+    const cacheKey = `${sceneId}-${voiceId}-${computeContentHash(fullText)}`;
     const cached = audioCache.get(cacheKey);
 
     if (cached) {
@@ -450,7 +462,7 @@ router.post('/:id/scenes/:sceneId/audio', async (req: Request, res: Response): P
       res.json({
         status: 'unavailable',
         error: 'TTS not configured',
-        duration_seconds: estimateDuration(scene.content)
+        duration_seconds: estimateDuration(fullText)
       });
       return;
     }
@@ -460,9 +472,9 @@ router.post('/:id/scenes/:sceneId/audio', async (req: Request, res: Response): P
     res.json({ status: 'generating' });
 
     // Generate in background (client will poll)
-    generateSpeech(scene.content, voiceId)
+    generateSpeech(fullText, voiceId)
       .then((buffer) => {
-        const duration = estimateDuration(scene.content);
+        const duration = estimateDuration(fullText);
         audioCache.set(cacheKey, { buffer, duration, generatedAt: new Date() });
         console.log(`[Audio] Cached audio for scene ${sceneId}, size: ${buffer.length}`);
       })
