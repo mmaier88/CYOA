@@ -11,3 +11,6 @@ export * from './agents/index.js';
 
 // CYOA - Diamond branching interactive stories
 export * from './cyoa/index.js';
+
+// TTS - Text-to-speech for audio playback
+export * from './tts/index.js';

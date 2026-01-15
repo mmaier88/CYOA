@@ -45,6 +45,9 @@ services:
       DATABASE_URL: postgresql://cyoa:${POSTGRES_PASSWORD:-cyoa_secret}@postgres:5432/cyoa
       REDIS_URL: redis://redis:6379
       CYOA_API_KEY: ${CYOA_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-4-20250514}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY}
       NODE_ENV: production
     depends_on:
       postgres:
@@ -90,8 +93,11 @@ services:
       DATABASE_URL: postgresql://cyoa:${POSTGRES_PASSWORD:-cyoa_secret}@postgres:5432/cyoa_staging
       REDIS_URL: redis://redis:6379
       CYOA_API_KEY: ${CYOA_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-4-20250514}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY}
       NODE_ENV: staging
-      QUEUE_PREFIX: "staging:"
+      QUEUE_PREFIX: "staging_"
     depends_on:
       postgres:
         condition: service_healthy
@@ -117,7 +123,7 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-4-20250514}
       NODE_ENV: staging
-      QUEUE_PREFIX: "staging:"
+      QUEUE_PREFIX: "staging_"
     depends_on:
       postgres:
         condition: service_healthy

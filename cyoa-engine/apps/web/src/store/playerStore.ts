@@ -1,6 +1,16 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { Story, Scene, EndingQuality } from '../api/types';
-import { getStory, startPlaythrough, makeDecision, getUserId } from '../api/client';
+import { getStory, startPlaythrough, makeDecision, getUserId, getPlaythrough } from '../api/client';
+
+// Storage keys
+const PLAYTHROUGH_STORAGE_KEY = 'cyoa_active_playthroughs';
+
+interface SavedPlaythrough {
+  jobId: string;
+  playthroughId: string;
+  savedAt: string;
+}
 
 interface PlayerState {
   // Story data
@@ -22,8 +32,45 @@ interface PlayerState {
   // Actions
   loadStory: (jobId: string) => Promise<void>;
   startPlay: () => Promise<void>;
+  resumePlay: (playthroughId: string) => Promise<void>;
   selectDecision: (decisionId: string) => Promise<void>;
   reset: () => void;
+  getSavedPlaythrough: (jobId: string) => SavedPlaythrough | null;
+  clearSavedPlaythrough: (jobId: string) => void;
+}
+
+// Helper functions for localStorage persistence
+function getSavedPlaythroughs(): Record<string, SavedPlaythrough> {
+  try {
+    const saved = localStorage.getItem(PLAYTHROUGH_STORAGE_KEY);
+    return saved ? JSON.parse(saved) : {};
+  } catch {
+    return {};
+  }
+}
+
+function savePlaythrough(jobId: string, playthroughId: string): void {
+  try {
+    const saved = getSavedPlaythroughs();
+    saved[jobId] = {
+      jobId,
+      playthroughId,
+      savedAt: new Date().toISOString(),
+    };
+    localStorage.setItem(PLAYTHROUGH_STORAGE_KEY, JSON.stringify(saved));
+  } catch (err) {
+    console.error('[Player] Failed to save playthrough:', err);
+  }
+}
+
+function removeSavedPlaythrough(jobId: string): void {
+  try {
+    const saved = getSavedPlaythroughs();
+    delete saved[jobId];
+    localStorage.setItem(PLAYTHROUGH_STORAGE_KEY, JSON.stringify(saved));
+  } catch (err) {
+    console.error('[Player] Failed to remove saved playthrough:', err);
+  }
 }
 
 export const usePlayerStore = create<PlayerState>((set, get) => ({
@@ -74,6 +121,9 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       const userId = getUserId();
       const response = await startPlaythrough(jobId, userId);
 
+      // Save to localStorage for resume
+      savePlaythrough(jobId, response.playthroughId);
+
       set({
         playthroughId: response.playthroughId,
         currentScene: response.currentScene,
@@ -91,6 +141,33 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     }
   },
 
+  // Resume an existing playthrough
+  resumePlay: async (playthroughId: string) => {
+    const { jobId } = get();
+    if (!jobId) throw new Error('No story loaded');
+
+    set({ isLoading: true, error: null });
+
+    try {
+      const response = await getPlaythrough(jobId, playthroughId);
+
+      set({
+        playthroughId: response.playthroughId,
+        currentScene: response.currentScene,
+        pathTaken: response.pathTaken as string[],
+        isComplete: response.isComplete,
+        endingQuality: response.currentScene?.endingQuality || null,
+        isLoading: false,
+      });
+    } catch (err: any) {
+      // If resume fails, clear the saved playthrough and start fresh
+      console.error('[Player] Failed to resume, starting fresh:', err);
+      removeSavedPlaythrough(jobId);
+      set({ isLoading: false });
+      return get().startPlay();
+    }
+  },
+
   // Make a decision
   selectDecision: async (decisionId: string) => {
     const { jobId, playthroughId, pathTaken } = get();
@@ -100,6 +177,14 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
     try {
       const response = await makeDecision(jobId, playthroughId, decisionId);
+
+      // Update saved playthrough timestamp
+      savePlaythrough(jobId, playthroughId);
+
+      // Clear saved playthrough if complete
+      if (response.isComplete) {
+        removeSavedPlaythrough(jobId);
+      }
 
       set({
         currentScene: response.currentScene,
@@ -117,17 +202,34 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     }
   },
 
+  // Get saved playthrough for a story
+  getSavedPlaythrough: (jobId: string): SavedPlaythrough | null => {
+    const saved = getSavedPlaythroughs();
+    return saved[jobId] || null;
+  },
+
+  // Clear saved playthrough for a story
+  clearSavedPlaythrough: (jobId: string) => {
+    removeSavedPlaythrough(jobId);
+  },
+
   // Reset player state
-  reset: () => set({
-    jobId: null,
-    story: null,
-    playthroughId: null,
-    currentScene: null,
-    pathTaken: [],
-    isComplete: false,
-    endingQuality: null,
-    isLoading: false,
-    isDeciding: false,
-    error: null,
-  }),
+  reset: () => {
+    const { jobId } = get();
+    if (jobId) {
+      removeSavedPlaythrough(jobId);
+    }
+    set({
+      jobId: null,
+      story: null,
+      playthroughId: null,
+      currentScene: null,
+      pathTaken: [],
+      isComplete: false,
+      endingQuality: null,
+      isLoading: false,
+      isDeciding: false,
+      error: null,
+    });
+  },
 }));

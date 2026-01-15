@@ -1,9 +1,14 @@
 import { Router, Request, Response } from 'express';
 import { Queue } from 'bullmq';
 import { PrismaClient } from '@prisma/client';
+import { z } from 'zod';
+import { createLLMClient, generateSpeech, estimateDuration, computeContentHash, DEFAULT_VOICE_ID } from '@chronicle/core';
 
 const router = Router();
 const prisma = new PrismaClient();
+
+// LLM client for character generation
+const llm = createLLMClient();
 
 // Redis connection config
 const redisConnection = {
@@ -167,6 +172,117 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
+// Schema for character generation response
+const CharacterGenerationSchema = z.object({
+  protagonist: z.object({
+    name: z.string(),
+    gender: z.enum(['male', 'female']),
+    age: z.string(),
+    role: z.string(),
+    background: z.string(),
+    personality: z.string(),
+    motivation: z.string(),
+    flaw: z.string(),
+  }),
+  supporting_characters: z.array(z.object({
+    name: z.string(),
+    gender: z.enum(['male', 'female']),
+    role: z.string(),
+    relationship: z.string(),
+    description: z.string(),
+    secret: z.string().optional(),
+  })),
+  story_hook: z.string(),
+});
+
+/**
+ * POST /v1/stories/generate-characters
+ * Generate characters for story preview (backcover)
+ */
+router.post('/generate-characters', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { genre, premise, sliders } = req.body;
+
+    if (!genre || !premise) {
+      res.status(400).json({ error: 'Missing required fields: genre, premise' });
+      return;
+    }
+
+    // Build slider context for the prompt
+    let sliderContext = '';
+    if (sliders) {
+      const sliderDescriptions: string[] = [];
+      if (sliders.violence && sliders.violence !== 'auto') {
+        const level = sliders.violence === 1 ? 'minimal' : sliders.violence === 5 ? 'brutal' : 'moderate';
+        sliderDescriptions.push(`Violence: ${level}`);
+      }
+      if (sliders.romance && sliders.romance !== 'auto') {
+        const level = sliders.romance === 1 ? 'minimal' : sliders.romance === 5 ? 'steamy' : 'moderate';
+        sliderDescriptions.push(`Romance: ${level}`);
+      }
+      if (sliders.tone && sliders.tone !== 'auto') {
+        const level = sliders.tone === 1 ? 'hopeful' : sliders.tone === 5 ? 'tragic' : 'bittersweet';
+        sliderDescriptions.push(`Tone: ${level}`);
+      }
+      if (sliders.darkness && sliders.darkness !== 'auto') {
+        const level = sliders.darkness === 1 ? 'light' : sliders.darkness === 5 ? 'dark' : 'gray';
+        sliderDescriptions.push(`Darkness: ${level}`);
+      }
+      if (sliderDescriptions.length > 0) {
+        sliderContext = `\n\nStory settings: ${sliderDescriptions.join(', ')}`;
+      }
+    }
+
+    const systemPrompt = `You are a character designer for interactive audio fiction.
+Generate compelling characters for a ${genre} story.
+Characters should feel real, with clear motivations and flaws.
+The protagonist should be someone the audience can root for (or against).
+Supporting characters should have distinct roles and relationships.`;
+
+    const userPrompt = `Create characters for this ${genre} story:
+
+Premise: ${premise}${sliderContext}
+
+Generate:
+1. A protagonist with:
+   - A fitting name (match the genre/setting)
+   - Gender (male or female)
+   - Age description (e.g., "early 30s", "teenager", "middle-aged")
+   - Role in the story (e.g., "reluctant hero", "cunning detective")
+   - Brief background (1-2 sentences)
+   - Personality traits (3-4 comma-separated traits)
+   - Core motivation (what drives them)
+   - Character flaw (weakness that creates conflict)
+
+2. 3-4 supporting characters, each with:
+   - Name
+   - Gender
+   - Role (e.g., "mentor", "love interest", "antagonist", "ally")
+   - Relationship to protagonist
+   - Brief description (1-2 sentences)
+   - Optional: A secret or hidden motivation
+
+3. A story hook (2-3 sentences that tease the story and make the reader want to know more)
+
+Respond with JSON only.`;
+
+    const response = await llm.generateJSON({
+      systemPrompt,
+      userPrompt,
+      schema: CharacterGenerationSchema,
+      context: {
+        jobId: 'character-gen-' + Date.now(),
+        agent: 'cyoa-orchestrator',
+      },
+    });
+
+    res.json({ characters: response.content });
+  } catch (error) {
+    console.error('Failed to generate characters:', error);
+    res.status(500).json({ error: 'Failed to generate characters' });
+  }
+});
+
 /**
  * GET /v1/stories/:id
  * Get story job status or completed story
@@ -276,6 +392,116 @@ router.get('/:id/scenes/:sceneId', async (req: Request, res: Response): Promise<
   } catch (error) {
     console.error('Failed to get scene:', error);
     res.status(500).json({ error: 'Failed to get scene' });
+  }
+});
+
+// In-memory audio cache (would use Redis/S3 in production)
+const audioCache: Map<string, { buffer: Buffer; duration: number; generatedAt: Date }> = new Map();
+
+/**
+ * POST /v1/stories/:id/scenes/:sceneId/audio
+ * Generate or retrieve TTS audio for a scene
+ */
+router.post('/:id/scenes/:sceneId/audio', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id, sceneId } = req.params;
+    const { voiceId = DEFAULT_VOICE_ID } = req.body;
+
+    // Verify the story job exists and is complete
+    const job = await prisma.storyJob.findUnique({
+      where: { id }
+    });
+
+    if (!job || job.status !== 'succeeded' || !job.storyId) {
+      res.status(404).json({ error: 'Story not found or not complete' });
+      return;
+    }
+
+    // Get the scene
+    const scene = await prisma.scene.findFirst({
+      where: {
+        id: sceneId,
+        storyId: job.storyId
+      }
+    });
+
+    if (!scene) {
+      res.status(404).json({ error: 'Scene not found' });
+      return;
+    }
+
+    // Check cache
+    const cacheKey = `${sceneId}-${voiceId}-${computeContentHash(scene.content)}`;
+    const cached = audioCache.get(cacheKey);
+
+    if (cached) {
+      console.log(`[Audio] Cache hit for scene ${sceneId}`);
+      res.json({
+        status: 'ready',
+        audio_url: `/v1/stories/${id}/scenes/${sceneId}/audio/stream?key=${encodeURIComponent(cacheKey)}`,
+        duration_seconds: cached.duration
+      });
+      return;
+    }
+
+    // Check if ELEVENLABS_API_KEY is configured
+    if (!process.env.ELEVENLABS_API_KEY) {
+      console.log('[Audio] No ELEVENLABS_API_KEY, returning mock response');
+      res.json({
+        status: 'unavailable',
+        error: 'TTS not configured',
+        duration_seconds: estimateDuration(scene.content)
+      });
+      return;
+    }
+
+    // Generate audio
+    console.log(`[Audio] Generating audio for scene ${sceneId}`);
+    res.json({ status: 'generating' });
+
+    // Generate in background (client will poll)
+    generateSpeech(scene.content, voiceId)
+      .then((buffer) => {
+        const duration = estimateDuration(scene.content);
+        audioCache.set(cacheKey, { buffer, duration, generatedAt: new Date() });
+        console.log(`[Audio] Cached audio for scene ${sceneId}, size: ${buffer.length}`);
+      })
+      .catch((err) => {
+        console.error(`[Audio] Failed to generate audio for scene ${sceneId}:`, err);
+      });
+  } catch (error) {
+    console.error('Failed to get scene audio:', error);
+    res.status(500).json({ error: 'Failed to get scene audio' });
+  }
+});
+
+/**
+ * GET /v1/stories/:id/scenes/:sceneId/audio/stream
+ * Stream cached audio for a scene
+ */
+router.get('/:id/scenes/:sceneId/audio/stream', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { key } = req.query;
+
+    if (!key || typeof key !== 'string') {
+      res.status(400).json({ error: 'Missing cache key' });
+      return;
+    }
+
+    const cached = audioCache.get(key);
+
+    if (!cached) {
+      res.status(404).json({ error: 'Audio not found in cache' });
+      return;
+    }
+
+    res.setHeader('Content-Type', 'audio/mpeg');
+    res.setHeader('Content-Length', cached.buffer.length);
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.send(cached.buffer);
+  } catch (error) {
+    console.error('Failed to stream audio:', error);
+    res.status(500).json({ error: 'Failed to stream audio' });
   }
 });
 
